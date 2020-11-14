@@ -1,6 +1,8 @@
 # HandsOnLab-automation-build-angular-app-with-jenkins
 Automation build Angular application with Jenkins
 
+![DSC FPTU HCMC](/assets/images/dsc-fptu-hcmc/DSC_FPT_University_HCMC_Horizontal_Logo.png)
+
 ## Prerequisites
 Minimum hardware requirements:
 - 8 GB of RAM
@@ -167,3 +169,5 @@ Then open the Jenkins build status, you will see the build triggered automatical
 
 [angular-boilerplate]: https://github.com/DSC-FPTU-HCMC/angular-boilerplate
 [jenkins-pipeline]: https://www.jenkins.io/doc/book/pipeline/
+
+![DSC FPTU HCMC](/assets/images/dsc-fptu-hcmc/HOME_PAGE_BANNERS.png)
