@@ -1,9 +1,14 @@
-# HandsOnLab-automation-build-angular-app-with-jenkins
-Automation build Angular application with Jenkins
-
 ![DSC FPTU HCMC](/assets/images/dsc-fptu-hcmc/DSC_FPT_University_HCMC_Horizontal_Logo.png)
 
+# HandsOnLab: Automate Angular Application Deployment with Jenkins
+
+Automation build Angular application with Jenkins
+
 ## Prerequisites
+If you setup Jenkins on your local machine, you have to configure the SCM point to your local source repository on your local machine.
+
+**Recommended**: using Google Compute Engine. It will provide you a Virtual Machine with an External IP Address which then be configured as the Webhook endpoint for repositories on SCM (Github).
+
 Minimum hardware requirements:
 - 8 GB of RAM
 - 1 GB of drive space (although 10 GB is a recommended minimum if running Jenkins as a Docker container)
