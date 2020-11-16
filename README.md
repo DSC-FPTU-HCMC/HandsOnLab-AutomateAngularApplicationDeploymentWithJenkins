@@ -23,36 +23,23 @@ Knowledge requirements:
 - Jenkins
 - Docker
 
-## Downloading and running Jenkins in Docker with your local machine
-```bash
-# Create docker-compose.yaml file
+## Create Jenkins container from image `jenkinsci/blueocean`
 
-version: "3.1"
-services:
-  jenkins:
-    build:
-      context: ./
-    restart: unless-stopped
-    environment:
-      - "JAVA_OPTS=-Xmx3g -Xms2G"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - jenkins-data:/var/jenkins_home
-    ports:
-      - "8080:8080"
-      - "50000:50000"
-volumes:
-  jenkins-data:
-    external: false
+https://hub.docker.com/r/jenkinsci/blueocean/
+
+```bash
+docker run \
+  --volume jenkins-data:/var/jenkins_home \
+  --publish 8080:8080 \
+  --detach \
+  --rm \
+  jenkinsci/blueocean
 ```
-- `--publish 8080:8080` ---- Maps (i.e. "publishes") port `8080` of the `jenkinsci/blueocean` container to port `8080` on the `host machine`. The first number represents the port on the host while the last represents the container’s port. Therefore, if you specified `-p 49000:8080` for this option, you would be accessing Jenkins on your host machine through port `49000`.
-- `--publish 50000:50000` ---- ( Optional ) Maps port `50000` of the `jenkinsci/blueocean` container to port `50000` on the host machine. This is only necessary if you have set up one or more inbound Jenkins agents on other machines, which in turn interact with the `jenkinsci/blueocean` container (the Jenkins "controller"). Inbound Jenkins agents communicate with the Jenkins controller through TCP port `50000` by default. You can change this port number on your Jenkins controller through the Configure Global Security page. If you were to change the TCP port for inbound Jenkins agents of your Jenkins controller to `51000` (for example), then you would need to re-run Jenkins (via this `docker run …​ `command) and specify this "publish" option with something like `--publish 52000:51000`, where the last value matches this changed value on the Jenkins controller and the first value is the port number on the machine hosting the Jenkins controller. Inbound Jenkins agents communicate with the Jenkins controller on that port (52000 in this example). Note that WebSocket agents in Jenkins 2.217 do not need this configuration.
-- `--volume jenkins-data:/var/jenkins_home` ---- Maps the `/var/jenkins_home` directory in the container to the Docker volume with the name `jenkins-data`. Instead of mapping the `/var/jenkins_home` directory to a Docker volume, you could also map this directory to one on your machine’s local file system. For example, specifying the option `--volume $HOME/jenkins:/var/jenkins_home` would map the container’s `/var/jenkins_home` directory to the jenkins subdirectory within the `$HOME` directory on your local machine, which would typically be `/Users/<your-username>/jenkins` or `/home/<your-username>/jenkins`. Note that if you change the source volume or directory for this, the volume from the docker:dind container above needs to be updated to match this.
 
 ```bash
 # Connect to `jenkins` container
 
-docker-compose exec jenkins bash
+docker exec -it jenkinsci bash
 ```
 
 ## Unlocking Jenkins
@@ -61,7 +48,7 @@ When you first access a new Jenkins instance, you are asked to unlock it using a
 1. After the 2 sets of asterisks appear in the terminal/command prompt window, browse to http://localhost:8080 and wait until the Unlock Jenkins page appears.
 1. Display the Jenkins console log with the command:
 ```bash
-docker-compose logs jenkins
+docker logs jenkinsci
 ```
 1. From your terminal/command prompt window again, copy the automatically-generated alphanumeric password (between the 2 sets of asterisks).
 1. On the Unlock Jenkins page, paste this password into the Administrator password field and click Continue.
@@ -85,7 +72,7 @@ Notes:
 
 ## Stopping and restarting Jenkins
 Throughout the remainder of this tutorial, you can stop your Docker container by running
-`docker-compose stop jenkins`
+`docker stop jenkinsci`
 
 To restart your Docker container:
 
@@ -95,19 +82,20 @@ To restart your Docker container:
 1. Wait until the log in page appears and log in.
 
 ## Fork and clone Angular project on Github
-Fork this repository into your Github account, and clone it to your local machine
+Fork this repository into your Github account, and clone it to your local machine.
 
 [DSC-FPTU-HCMC/angular-boilerplate][angular-boilerplate]
 
+We have already created the `Jenkinsfile` file. This is the foundation of `Pipeline-as-Code`, which treats the continuous delivery pipeline as a part of the application to be versioned and reviewed like any other code. Read more about [Pipeline][jenkins-pipeline] and what a Jenkinsfile is in the Pipeline and [Using a Jenkinsfile](https://www.jenkins.io/doc/book/pipeline/jenkinsfile/) sections of the User Handbook.
+
 ## Create credential
-Follow the below instruction to add SSH authentication to your Github account and Jenkins
+Follow the below instruction to generate SSH authentication keys, then add to your `public key` to Github account, and `private key` to Jenkins.
 
 [Configuring SSH authentication between GitHub and Jenkins](https://mohitgoyal.co/2017/02/27/configuring-ssh-authentication-between-github-and-jenkins/)
-
-## Install plugin
-- At the `Jenkins Dashboard`, choose `Manage Jenkins` --> `Manage Plugins` --> `Available`
-- Then filter `docker`, select the `Docker Pipeline` and click `Download now and install after restart`
-- The page `Installing Plugins/Upgrades` will open, then tick the checkbox `Restart Jenkins when installation is complete and no jobs are running`
+```bash
+# Generate SSH Key on Jenkins Server
+ssh-keygen -t rsa
+```
 
 ## Create your Pipeline project in Jenkins
 1. Go back to Jenkins, log in again if necessary and click `create new jobs` under Welcome to Jenkins!
@@ -120,43 +108,38 @@ Follow the below instruction to add SSH authentication to your Github account an
 1. From the `SCM` field, choose `Git`, and fill the Repository URL field.
 1. Click `Save` to save your new Pipeline project. You’re now ready to begin creating your `Jenkinsfile`, which you’ll be checking into your Git repository.
 
-## Create your initial Pipeline as a Jenkinsfile
-This is the foundation of `Pipeline-as-Code`, which treats the continuous delivery pipeline as a part of the application to be versioned and reviewed like any other code. Read more about [Pipeline][jenkins-pipeline] and what a Jenkinsfile is in the Pipeline and [Using a Jenkinsfile](https://www.jenkins.io/doc/book/pipeline/jenkinsfile/) sections of the User Handbook.
-```Jenkinsfile
-pipeline {
-  agent {
-    docker {
-      image 'node:15-alpine'
-      args '-p 3000:3000'
-    }
-  }
-  environment {
-    CI = 'true'
-  }
-  stages {
-    stage('Build') {
-      steps {
-        sh 'npm install'
-      }
-    }
-    stage('Test') {
-      steps {
-        sh 'echo Test done!'
-      }
-    }
-    stage('Deliver') {
-      steps {
-        input message: 'Deploy to production? (Click "Proceed" to continue)'
-        sh 'gsutil -m rsync -r ./dist gs://<your-bucket-name>/static'
-      }
-    }
-  }
-}
-```
-
 ## Build manually
 - At the Jenkins Dashboard select the pipeline `simple-node-js-angular-npm-app`
 - Go into the Pipeline page click Build Now
+
+## Configure NodeJS runtime for Jenkins agent
+Install NodeJS plugin
+- Goto `Manage Jenkins > Manage Plugins`, then click on `Available tab
+- Filter `NodeJS` and install the plugin and click `Download now and install after restart`
+- The page `Installing Plugins/Upgrades` will open, then tick the checkbox `Restart Jenkins when installation is complete and no jobs are running`
+
+After restarting, navigate to `Manage Jenkins -> Global Tool Configuration` and look for the `NodeJS`
+- Install the NodeJS version that you need and click save
+
+## Install Google OAuth Credentials and GCloud SDK plugins for Jenkins
+- Goto `Manage Jenkins > Manage Plugins`, then click on `Available tab
+- Filter `Google OAuth Credentials`, and click the checkbox
+- Filter `GCloud SDK`, and click the checkbox
+- Click `Download now and install after restart`
+- The page `Installing Plugins/Upgrades` will open, then tick the checkbox `Restart Jenkins when installation is complete and no jobs are running`
+
+After restarting, navigate to `Manage Jenkins -> Global Tool Configuration` and look for the `NodeJS`
+- Install the NodeJS version that you need and click save
+
+## Add GCP Credential to to enable Jenkins deploy our application to Google App Engine
+Create service account on Google Cloud Platform:
+- Goto to Google Cloud Console and navigate to [IAM & Admin > Service accounts](https://console.cloud.google.com/iam-admin/serviceaccounts)
+- Create a new service account and generate a private key, then save it to your computer. This service account use for authenticate Jenkins and allow it to deploy Angular application to Google App Engine.
+
+Add service account's private key to Jenkins:
+- Goto `Manage Jenkins > Manage Credentials`
+- Click `global`
+- The page `Global credentials` will open, then click `Add Credentials`
 
 ## Configure Webhook with Github
 [How to Integrate Your GitHub Repository to Your Jenkins Project](https://www.blazemeter.com/blog/how-to-integrate-your-github-repository-to-your-jenkins-project)
