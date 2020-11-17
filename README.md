@@ -23,18 +23,23 @@ Knowledge requirements:
 - Jenkins
 - Docker
 
-## Create Jenkins container from image `jenkinsci/blueocean`
-
-https://hub.docker.com/r/jenkinsci/blueocean/
-
+## Create Jenkins container from `jenkinsci/blueocean` image
 ```bash
+# Create a volume to store jenkins data
+docker volume create jenkins-data
+
+# Create a container named `jenkinsci` from the `jenkinsci/blueocean` image
+
 docker run \
+  --name jenkinsci
   --volume jenkins-data:/var/jenkins_home \
   --publish 8080:8080 \
   --detach \
   --rm \
   jenkinsci/blueocean
 ```
+
+Read more about `jenkinsci/blueocean` image: https://hub.docker.com/r/jenkinsci/blueocean/
 
 ```bash
 # Connect to `jenkins` container
@@ -70,14 +75,14 @@ Notes:
   - If the page doesn’t automatically refresh after a minute, use your web browser to refresh the page manually.
 1. If required, log in to Jenkins with the credentials of the user you just created and you’re ready to start using Jenkins!
 
-## Stopping and restarting Jenkins
+**To stop and restart Jenkins**
+
 Throughout the remainder of this tutorial, you can stop your Docker container by running
 `docker stop jenkinsci`
 
 To restart your Docker container:
 
-1. Run the same `docker run …`​ command you ran for macOS, Linux or Windows above.
-  **Note:** This process also updates your Docker image, if an updated one is available.
+1. Run the same `docker run …`​ command you ran for macOS, Linux or Windows above. This process also updates your Docker image, if an updated one is available.
 1. Browse to `http://localhost:8080`.
 1. Wait until the log in page appears and log in.
 
@@ -88,13 +93,29 @@ Fork this repository into your Github account, and clone it to your local machin
 
 We have already created the `Jenkinsfile` file. This is the foundation of `Pipeline-as-Code`, which treats the continuous delivery pipeline as a part of the application to be versioned and reviewed like any other code. Read more about [Pipeline][jenkins-pipeline] and what a Jenkinsfile is in the Pipeline and [Using a Jenkinsfile](https://www.jenkins.io/doc/book/pipeline/jenkinsfile/) sections of the User Handbook.
 
-## Create credential
+To run the application locally on your machine
+```bash
+# Install all dependencies listed in package.json for our Angular application
+npm install
+
+# Start the application
+ng serve -o
+```
+
+To build the source code locally on your machine
+```bash
+ng build --aot --prod
+```
+
+## Create SSH authentication keys to authorize Jenkins to your Github repository
 Follow the below instruction to generate SSH authentication keys, then add to your `public key` to Github account, and `private key` to Jenkins.
 
 [Configuring SSH authentication between GitHub and Jenkins](https://mohitgoyal.co/2017/02/27/configuring-ssh-authentication-between-github-and-jenkins/)
 ```bash
 # Generate SSH Key on Jenkins Server
 ssh-keygen -t rsa
+
+# The public key and private key will be saved in `/home/$USER/.ssh/`
 ```
 
 ## Create your Pipeline project in Jenkins
@@ -110,7 +131,8 @@ ssh-keygen -t rsa
 
 ## Build manually
 - At the Jenkins Dashboard select the pipeline `simple-node-js-angular-npm-app`
-- Go into the Pipeline page click Build Now
+- Go into the Pipeline page click `Build Now`
+- Then will get an error because you have provide it the `nodejs` tool.
 
 ## Configure NodeJS runtime for Jenkins agent
 Install NodeJS plugin
@@ -120,6 +142,11 @@ Install NodeJS plugin
 
 After restarting, navigate to `Manage Jenkins -> Global Tool Configuration` and look for the `NodeJS`
 - Install the NodeJS version that you need and click save
+
+Build manually again
+- At this step the pipeline will be failed at the `Deploy` state
+- You need to install Google OAuth Credentials and GCloud SDK plugins
+- And add GCP Credential to enable Jenkins deploy our application to Google App Engine
 
 ## Install Google OAuth Credentials and GCloud SDK plugins for Jenkins
 - Goto `Manage Jenkins > Manage Plugins`, then click on `Available tab
@@ -131,7 +158,7 @@ After restarting, navigate to `Manage Jenkins -> Global Tool Configuration` and 
 After restarting, navigate to `Manage Jenkins -> Global Tool Configuration` and look for the `NodeJS`
 - Install the NodeJS version that you need and click save
 
-## Add GCP Credential to to enable Jenkins deploy our application to Google App Engine
+## Add GCP Credential to enable Jenkins deploy our application to Google App Engine
 Create service account on Google Cloud Platform:
 - Goto to Google Cloud Console and navigate to [IAM & Admin > Service accounts](https://console.cloud.google.com/iam-admin/serviceaccounts)
 - Create a new service account and generate a private key, then save it to your computer. This service account use for authenticate Jenkins and allow it to deploy Angular application to Google App Engine.
@@ -142,12 +169,16 @@ Add service account's private key to Jenkins:
 - The page `Global credentials` will open, then click `Add Credentials`
 
 ## Configure Webhook with Github
+[Webhooks](https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/about-webhooks) allow you to build or set up integrations, such as GitHub Apps or OAuth Apps, which subscribe to certain events on GitHub.com. When one of those events is triggered, we'll send a HTTP POST payload to the webhook's configured URL. Webhooks can be used to update an external issue tracker, trigger CI builds, update a backup mirror, or even deploy to your production server.
+
 [How to Integrate Your GitHub Repository to Your Jenkins Project](https://www.blazemeter.com/blog/how-to-integrate-your-github-repository-to-your-jenkins-project)
+
+Update your pipeline check the box `GitHub hook trigger for GITScm polling` on the `Build` section.
 
 ## Edit the code and push to your remote
 `__do_it_yourself__`
 
-Then open the Jenkins build status, you will see the build triggered automatically
+Then open the Jenkins build status, you will see the build triggered **automatically**
 
 ## References
 - [Jenkins in Docker](https://www.jenkins.io/doc/book/installing/docker/)
