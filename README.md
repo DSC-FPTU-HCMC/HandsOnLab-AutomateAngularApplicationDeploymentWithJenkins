@@ -23,27 +23,50 @@ Knowledge requirements:
 - Jenkins
 - Docker
 
-## Create Jenkins container from `jenkinsci/blueocean` image
+## Build custom Jenkins image and run Jenkins on Docker container
+On your machine, create a new `Dockerfile` file
 ```bash
-# Create a volume to store jenkins data
-docker volume create jenkins-data
+FROM jenkins/jenkins
 
-# Create a container named `jenkinsci` from the `jenkinsci/blueocean` image
+USER root
+RUN apt-get -y update && \
+    apt-get -y install apt-transport-https ca-certificates curl gnupg-agent software-properties-common
+
+# Install NodeJS
+RUN curl -sL https://deb.nodesource.com/setup_14.x | bash - && \
+    yes | apt install nodejs
+
+# Install Google Cloud SDK
+ENV CLOUDSDK_PYTHON="/usr/bin/python3"
+RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key --keyring /usr/share/keyrings/cloud.google.gpg  add - && apt-get update -y && apt-get install google-cloud-sdk -y
+
+USER jenkins
+```
+
+Build a cutom jenkins image using the following command
+```bash
+docker build --tag my-custom-jenkins .
+```
+
+Create a volume to store jenkins data
+```bash
+docker volume create jenkins-data
+```
+
+Create a container named `jenkinsci` from the our custom image `my-custom-jenkins`
+```bash
 
 docker run \
-  --name jenkinsci
-  --volume jenkins-data:/var/jenkins_home \
+  --volume /var/run/docker.sock:/var/run/docker.sock \
+  --volume jenkins-docker-certs:/certs/client:ro \
   --publish 8080:8080 \
   --detach \
   --rm \
-  jenkinsci/blueocean
+  my-custom-jenkins
 ```
 
-Read more about `jenkinsci/blueocean` image: https://hub.docker.com/r/jenkinsci/blueocean/
-
+Connect to `jenkinsci` container
 ```bash
-# Connect to `jenkins` container
-
 docker exec -it jenkinsci bash
 ```
 
