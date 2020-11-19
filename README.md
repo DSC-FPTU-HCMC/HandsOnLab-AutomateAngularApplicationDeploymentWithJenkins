@@ -55,10 +55,9 @@ docker volume create jenkins-data
 
 Create a container named `jenkinsci` from the our custom image `my-custom-jenkins`
 ```bash
-
 docker run \
-  --volume /var/run/docker.sock:/var/run/docker.sock \
-  --volume jenkins-docker-certs:/certs/client:ro \
+  --name jenkinsci
+  --volume jenkins-data:/var/jenkins_home \
   --publish 8080:8080 \
   --detach \
   --rm \
@@ -208,6 +207,7 @@ Then open the Jenkins build status, you will see the build triggered **automatic
 - [Build a Node.js and React app with npm](https://www.jenkins.io/doc/tutorials/build-a-node-js-and-react-app-with-npm/)
 - [~jpetazzo/Using Docker-in-Docker for your CI or testing environment? Think twice.](https://jpetazzo.github.io/2015/09/03/do-not-use-docker-in-docker-for-ci/)
 - [Docker inside Docker for Jenkins](https://itnext.io/docker-inside-docker-for-jenkins-d906b7b5f527)
+- [Jenkins Pipeline file with Apache Groovy](https://www.eficode.com/blog/jenkins-groovy-tutorial)
 
 [angular-boilerplate]: https://github.com/DSC-FPTU-HCMC/angular-boilerplate
 [jenkins-pipeline]: https://www.jenkins.io/doc/book/pipeline/
