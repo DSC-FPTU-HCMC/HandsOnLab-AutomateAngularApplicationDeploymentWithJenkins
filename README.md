@@ -202,6 +202,43 @@ Update your pipeline check the box `GitHub hook trigger for GITScm polling` on t
 
 Then open the Jenkins build status, you will see the build triggered **automatically**
 
+# Sending email notification
+[Sending Notifications in Pipeline](https://www.jenkins.io/blog/2016/07/18/pipeline-notifications/)
+
+# Create code coverage reports
+Install the `HTML Publisher` plugin and add the following stage in `Jenkinsfile`
+```bash
+pipeline {
+
+  ...
+
+  stages {
+
+    ...
+
+    stage('Test Code Coverage') {
+      steps {
+        sh './node_modules/.bin/ng test --no-watch --code-coverage'
+        // create the `reports` directory if not exist
+        publishHTML(
+          target : [
+            allowMissing: false,
+            alwaysLinkToLastBuild: false,
+            keepAll: true,
+            reportDir: './coverage/angular-boilerplate/',
+            reportFiles: 'index.html',
+            reportName: 'RCov Report',
+            reportTitles: 'RCov Report'
+          ]
+        )
+      }
+    }
+
+    ...
+  }
+}
+```
+
 ## References
 - [Jenkins in Docker](https://www.jenkins.io/doc/book/installing/docker/)
 - [Build a Node.js and React app with npm](https://www.jenkins.io/doc/tutorials/build-a-node-js-and-react-app-with-npm/)
